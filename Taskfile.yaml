@@ -1,0 +1,62 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  PROJECT_NAME: control1
+
+tasks:
+  default:
+    cmds:
+      - task -a
+    silent: true
+
+  clean:
+    dir: control1
+    cmds:
+      - rm -f control0.flac
+      - rm -f control1.flac
+
+  render:control1:
+    dir: control1
+    cmds: [reaper -nosplash -noactivate -renderproject control1.rpp]
+
+  render:
+    dir: control1
+    cmds:
+      - task: render:control1
+      - mv control1.flac control0.flac
+      - task: render:control1
+
+  compare:
+    dir: control1
+    cmds:
+      - cmp -s control0.flac control1.flac || exit 1
+      - echo "files are the exact same"
+
+  control:
+    - task: clean
+    - task: render
+    - task: compare
+
+  chill: sleep 0.5 && echo "chill"
+
+  control:5:
+    - echo "Render 1"
+    - task: control
+    - task: chill
+
+    - echo "Render 2"
+    - task: control
+    - task: chill
+
+    - echo "Render 3"
+    - task: control
+
+    - echo "Render 4"
+    - task: control
+    - task: chill
+
+    - echo "Render 5"
+    - task: control
+    - echo "done"
