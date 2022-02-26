@@ -3,7 +3,23 @@
 version: '3'
 
 vars:
+  PICTDIFF_VERSION: 1.0.5
   PROJECT_NAME: control1
+  NODE_DOCKER_IMAGE_VERSION: node:17-alpine
+  TRIVY_SCAN_DOCKER_STEP: |-
+    SHELL [\"/bin/ash\", \"-eo\", \"pipefail\", \"-c\"]
+    RUN wget -q -O - https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin \
+      && trivy filesystem --exit-code 1 --no-progress / \
+      && trivy image --reset \
+      && rm -rf /usr/local/bin/trivy \
+      && rm -rf /root/.cache
+  NODEDOCKERFILE: |-
+    FROM {{.NODE_DOCKER_IMAGE_VERSION}}
+    RUN apk upgrade --no-cache
+    # hadolint ignore=DL3013,DL3059
+    RUN npm install -g pictdiff@{{.PICTDIFF_VERSION}}
+    ENTRYPOINT [\"pictdiff\"]
+
 
 tasks:
   default:
@@ -11,17 +27,54 @@ tasks:
       - task -a
     silent: true
 
+  nodedocker:build:
+    silent: true
+    dir: control1
+    cmds:
+      - echo "{{.NODEDOCKERFILE}}" | docker build --tag 4x0v7/pictdiff:{{.PICTDIFF_VERSION}} -
+
   clean:
     dir: control1
     cmds:
       - rm -f control0.flac
       - rm -f control1.flac
+      - rm -f output0.png
+      - rm -f output1.png
+      - rm -f outputdiff.png
+
+  tagdiff:
+    desc: diff 2 refs and compare waveforms
+    cmds:
+      - task: diffcommits
+        vars:
+          REF1: feature/clip-waveforms
+          REF2: hardclip-v0.0.0
+          # REF2: 'fx=clip;gain=24;hard=100;'
+
+  diffcommits:
+    dir: control1
+    vars:
+      REF1: '{{default "main" .REF1}}'
+      REF2: '{{default "main" .REF2}}'
+    cmds:
+      - defer: git checkout main
+      # - task: clean
+      - git checkout {{.REF1}} # hardCLIP
+      - task: render:control1
+      - mv control1.flac control0.flac
+      - git checkout {{.REF2}}
+      - task: render:control1
+      - task: waveform:diff
+      - task: compare
 
   render:control1:
     dir: control1
-    cmds: [reaper -nosplash -noactivate -renderproject control1.rpp]
+    cmds:
+      - reaper -nosplash -noactivate -renderproject control1.rpp
+      # - mv control1.flac control0.flac
 
   render:
+    desc: Render the file using reaper.
     dir: control1
     cmds:
       - task: render:control1
@@ -35,11 +88,62 @@ tasks:
       - echo "files are the exact same"
 
   control:
+    desc: Test for variance in output waveforms
+    cmds:
     - task: clean
     - task: render
+    - task: waveform:diff
     - task: compare
 
   chill: sleep 0.5 && echo "chill"
+
+  waveform:diff:
+    deps:
+      - nodedocker:build
+      - waveform:diff:genimgs
+    dir: control1
+    cmds:
+      - >
+        docker run --rm -it -v ${PWD}:/imgs -w/imgs
+        4x0v7/pictdiff:{{.PICTDIFF_VERSION}}
+        output0.png output1.png outputdiff.png
+
+  waveform:diff:genimgs:
+    desc: output both waveforms
+    cmds:
+      - task: waveform:reference
+      - task: waveform:difference
+
+  waveform:reference:
+    desc: reference waveform
+    cmds:
+      - task: waveform
+        vars:
+          IN_AUDIO_FILE: control0.flac
+          OUT_IMAGE_FILE: output0.png
+  waveform:difference:
+    desc: difference waveform
+    cmds:
+      - task: waveform
+        vars:
+          IN_AUDIO_FILE: control1.flac
+          OUT_IMAGE_FILE: output1.png
+
+
+  waveform:
+    dir: control1
+    vars:
+      IN_AUDIO_FILE: '{{default "control1.flac" .IN_AUDIO_FILE}}'
+      OUT_IMAGE_FILE: '{{default "output1.png" .OUT_IMAGE_FILE}}'
+    cmds:
+      # --split-channels
+      - >
+        docker run --rm -v ${PWD}:/wavs -w /wavs
+        realies/audiowaveform
+        --colors audition
+        --amplitude-scale 1
+        --zoom 64
+        -i {{.IN_AUDIO_FILE}} -o {{.OUT_IMAGE_FILE}}
 
   control:5:
     - echo "Render 1"
@@ -60,3 +164,8 @@ tasks:
     - echo "Render 5"
     - task: control
     - echo "done"
+
+  open:
+    dir: control1
+    cmds:
+      - reaper control1.rpp
