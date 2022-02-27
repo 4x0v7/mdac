@@ -41,6 +41,7 @@ tasks:
       - rm -f output0.png
       - rm -f output1.png
       - rm -f outputdiff.png
+      - rm -f outputdiffinvert.png
 
   tagdiff:
     desc: diff 2 refs and compare waveforms
@@ -59,12 +60,13 @@ tasks:
     cmds:
       - defer: git checkout main
       # - task: clean
-      - git checkout {{.REF1}} # hardCLIP
+      - git checkout {{.REF1}} control1.rpp # hardCLIP
       - task: render:control1
       - mv control1.flac control0.flac
-      - git checkout {{.REF2}}
+      - git checkout {{.REF2}} control1.rpp
       - task: render:control1
       - task: waveform:diff
+      - task: invert
       - task: compare
 
   render:control1:
@@ -108,6 +110,13 @@ tasks:
         4x0v7/pictdiff:{{.PICTDIFF_VERSION}}
         output0.png output1.png outputdiff.png
 
+  invert:
+    cmds:
+      - >
+        docker run --rm -it -v ${PWD}/control1:/img -w /img alpine sh -c '
+        apk add imagemagick &&
+        magick convert outputdiff.png -channel RGB -negate outputdiffinvert.png'
+
   waveform:diff:genimgs:
     desc: output both waveforms
     cmds:
@@ -140,9 +149,11 @@ tasks:
       - >
         docker run --rm -v ${PWD}:/wavs -w /wavs
         realies/audiowaveform
-        --colors audition
+        --background-color 000000
+        --waveform-color FF5733
+        --height 500
         --amplitude-scale 1
-        --zoom 64
+        --pixels-per-second 1500
         -i {{.IN_AUDIO_FILE}} -o {{.OUT_IMAGE_FILE}}
 
   control:5:
