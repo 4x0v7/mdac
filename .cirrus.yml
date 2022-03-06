@@ -17,6 +17,7 @@ task:
   path_echo_debug_script: |
     Write-Host 'Trying $CIRRUS_ENV'
     Write-Host $CIRRUS_ENV
+    cat $CIRRUS_ENV
     Write-Host 'Trying $env:CIRRUS_ENV'
     Write-Host $env:CIRRUS_ENV
     Write-Host 'Trying $env:Path'
