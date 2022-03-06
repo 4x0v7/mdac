@@ -1,0 +1,7 @@
+windows_container:
+  image: cirrusci/windowsservercore:2019
+
+task:
+  env:
+    CIRRUS_SHELL: powershell
+  scoop_script: Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
