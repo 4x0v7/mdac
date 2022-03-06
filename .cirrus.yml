@@ -4,4 +4,10 @@ windows_container:
 task:
   env:
     CIRRUS_SHELL: powershell
-  scoop_script: Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+  scoop_install_script: Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+  scoop_switch_to_shovel_script: |
+    scoop install 7zip git
+    scoop config SCOOP_REPO 'https://github.com/Ash258/Scoop-Core'
+    scoop update
+    scoop status
+    scoop checkup
