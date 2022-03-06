@@ -9,7 +9,7 @@ task:
     Write-Host "NEWPATH=$env:PATH" >> $env:CIRRUS_ENV
     Write-Host $env:Path
     scoop which scoop
-    scoop install 7zip git
+    scoop install 7zip innounp git
     scoop config SCOOP_REPO 'https://github.com/Ash258/Scoop-Core'
     scoop update
     scoop status
