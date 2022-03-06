@@ -5,7 +5,7 @@ task:
   env:
     CIRRUS_SHELL: powershell
   scoop_install_script: |
-    iwr -useb 'https://raw.githubusercontent.com/ScoopInstaller/Install/a90548e01abe99c9211e83c5fad3693ecf4227c2/install.ps1' | iex
+    Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
     Write-Host "NEWPATH=$env:PATH" >> $env:CIRRUS_ENV
     Write-Host $env:Path
     scoop which scoop
