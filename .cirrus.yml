@@ -6,8 +6,9 @@ task:
     CIRRUS_SHELL: powershell
   scoop_install_script: |
     Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-    echo "PATH=$env:PATH" >> $CIRRUS_ENV
+    echo "NEWPATH=$env:PATH" >> $CIRRUS_ENV
   scoop_switch_to_shovel_script: |
+    $env:PATH="$env:NEWPATH"
     scoop install 7zip git
     scoop config SCOOP_REPO 'https://github.com/Ash258/Scoop-Core'
     scoop update
