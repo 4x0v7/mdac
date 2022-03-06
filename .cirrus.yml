@@ -9,15 +9,17 @@ task:
     Write-Host "NEWPATH=$env:PATH" >> $env:CIRRUS_ENV
     Write-Host $env:Path
     scoop which scoop
-    where scoop
-  scoop_switch_to_shovel_script: |
-    Write-Host 'Trying $CIRRUS_ENV'
-    Write-Host $CIRRUS_ENV
-    Write-Host 'Trying $env:CIRRUS_ENV'
-    Write-Host $env:CIRRUS_ENV
-    $env:PATH="$env:NEWPATH"
     scoop install 7zip git
     scoop config SCOOP_REPO 'https://github.com/Ash258/Scoop-Core'
     scoop update
     scoop status
     scoop checkup
+  path_echo_debug_script: |
+    Write-Host 'Trying $CIRRUS_ENV'
+    Write-Host $CIRRUS_ENV
+    Write-Host 'Trying $env:CIRRUS_ENV'
+    Write-Host $env:CIRRUS_ENV
+    Write-Host 'Trying $env:Path'
+    Write-Host $env:Path
+    Write-Host 'Trying $env:NEWPATH'
+    Write-Host $env:NEWPATH
